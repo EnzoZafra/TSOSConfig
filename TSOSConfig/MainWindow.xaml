@@ -1,0 +1,36 @@
+﻿<ribbon:RibbonWindow x:Class="TSOSConfig.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:ribbon="http://schemas.microsoft.com/winfx/2006/xaml/presentation/ribbon"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TSOSConfig"
+        xmlns:view="clr-namespace:TSOSConfig.Views"
+        xmlns:viewmodel="clr-namespace:TSOSConfig.ViewModels"
+        mc:Ignorable="d"
+        Title="TSOS Config" Height="700" Width="516"
+        DataContext="{Binding Source={x:Static viewmodel:MainViewModel.Instance}}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <local:MainRibbon/>
+        <ContentControl Grid.Row="1" Margin="3">   
+            <view:ConfigureView/>
+        </ContentControl>
+
+        <Expander Grid.Row="2"
+                  IsExpanded="False"
+                  Header="Preview TSOS.XML">
+            <TextBox x:Name="TextBox" Height="220"
+                               IsReadOnly="True"
+                               FontFamily="Courier New"
+                               FontSize="14"
+                               Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                               Text="{Binding File.RawXML}"/>
+        </Expander>
+    </Grid>
+</ribbon:RibbonWindow>
