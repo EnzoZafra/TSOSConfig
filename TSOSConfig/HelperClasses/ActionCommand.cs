@@ -45,5 +45,11 @@ namespace TSOSConfig.HelperClasses
         {
             return _canExecute == null || _canExecute();
         }
+
+        public void RaiseCanExecuteChanged()
+        {
+            CommandManager.InvalidateRequerySuggested();
+        }
+
     }
 }

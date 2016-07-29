@@ -5,10 +5,34 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:viewmodel="clr-namespace:TSOSConfig.ViewModels"
              xmlns:validation="clr-namespace:TSOSConfig.HelperClasses.Validations"
+             xmlns:converters="clr-namespace:TSOSConfig.HelperClasses.Converters"
+             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              DataContext="{Binding Source={x:Static viewmodel:ConfigureViewModel.Instance}}"
              mc:Ignorable="d" d:DesignWidth="517">
     
     <UserControl.Resources>
+        <converters:SelectionToEnabledConverter x:Key="SelectionToEnabledConverter"/>
+        <converters:TextToEnabledConverter x:Key="TextToEnabledConverter"/>
+        <Style TargetType="xctk:IntegerUpDown">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,2,40,2" />
+            <Setter Property="Validation.ErrorTemplate">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <DockPanel LastChildFill="true">
+                            <Border Background="Red" DockPanel.Dock="right" Margin="5,0,0,0" Width="20" Height="20" CornerRadius="10"
+                                    ToolTip="{Binding ElementName=customAdorner, Path=AdornedElement.(Validation.Errors)[0].ErrorContent}">
+                                <TextBlock Text="!" VerticalAlignment="center" HorizontalAlignment="center" FontWeight="Bold" Foreground="white">
+                                </TextBlock>
+                            </Border>
+                            <AdornedElementPlaceholder Name="customAdorner" VerticalAlignment="Center" >
+                                <Border BorderBrush="red" BorderThickness="1" />
+                            </AdornedElementPlaceholder>
+                        </DockPanel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style TargetType="{x:Type TextBox}">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Margin" Value="0,2,40,2" />
@@ -49,8 +73,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Label Grid.Column="0" Content="Recurring Time:" Margin="5"/>
-                        <TextBox Grid.Column="1" Width="Auto" MinWidth="130" Margin="5"
-                                 Text="{Binding Configuration.RecurringTime, UpdateSourceTrigger=PropertyChanged}"/>
+                        <xctk:IntegerUpDown Grid.Column="1" Width="Auto" MinWidth="120" Margin="5,5,10,5" Minimum="0">
+                            <xctk:IntegerUpDown.Value>
+                                <Binding Path="Configuration.RecurringTime" UpdateSourceTrigger="PropertyChanged">
+                                    <Binding.ValidationRules>
+                                        <validation:RecurringTimeValidation/>
+                                    </Binding.ValidationRules>
+                                </Binding>
+                            </xctk:IntegerUpDown.Value>
+                        </xctk:IntegerUpDown>
                     </Grid>
                     <Grid Grid.Column="1">
                         <Grid.ColumnDefinitions>
@@ -58,8 +89,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Label Grid.Column="0" Content="Mail Server:" Margin="5"/>
-                        <TextBox Grid.Column="1" Width="Auto" MinWidth="130" Margin="5"
-                                 Text="{Binding Configuration.MailServer, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Grid.Column="1" Width="Auto" MinWidth="120" Margin="5,5,10,5">
+                            <TextBox.Text>
+                                <Binding Path="Configuration.MailServer" UpdateSourceTrigger="PropertyChanged">
+                                    <Binding.ValidationRules>
+                                        <validation:MailServerValidation/>
+                                    </Binding.ValidationRules>
+                                </Binding>
+                            </TextBox.Text>
+                        </TextBox>
                     </Grid>
                 </Grid>
             </GroupBox>
@@ -71,7 +109,7 @@
                         <ColumnDefinition Width="170"/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    <ListView Grid.Column="0" MinHeight="150" MinWidth="100" Margin="7" 
+                    <ListView x:Name="DatabaseList" Grid.Column="0" MinHeight="150" MinWidth="100" Margin="7" 
                              ItemsSource="{Binding DatabaseList, UpdateSourceTrigger=PropertyChanged}"
                              SelectedValue="{Binding SelectedDatabase}" >
                     </ListView>
@@ -88,7 +126,7 @@
                                 <ColumnDefinition/>
                             </Grid.ColumnDefinitions>
                             <Label Content="Database Name:" Margin="0,20,0,20" HorizontalAlignment="Right"/>
-                            <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="20,20,30,20">
+                            <TextBox x:Name="DatabaseBox"  Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="20,20,30,20">
                                 <TextBox.Text>
                                     <Binding Path="Database.DatabaseName" UpdateSourceTrigger="PropertyChanged">
                                         <Binding.ValidationRules>
@@ -98,11 +136,36 @@
                                 </TextBox.Text>
                             </TextBox>
                             <Label Grid.Row="1" Grid.Column="0" Content="Customer Name:" Margin="0,20,0,20" HorizontalAlignment="Right"/>
-                            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="20,20,30,20"
-                                 Text="{Binding Path=Database.CustomerName, UpdateSourceTrigger=PropertyChanged}"/>
-                            <Button Grid.Row="2" Grid.Column="0" Margin="10" Content="Add" Command="{Binding AddCommand}"/>
-                            <Button Grid.Row="2" Grid.Column="1" Margin="10" Content="Delete" Command="{Binding DeleteCommand}"/>
-                            <Button Grid.Row="2" Grid.Column="2" Margin="10" Content="Clear All" Command="{Binding ClearCommand}"/>
+                            <TextBox x:Name="CustomerBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="20,20,30,20">
+                                <TextBox.Text>
+                                    <Binding Path="Database.CustomerName" UpdateSourceTrigger="PropertyChanged">
+                                        <Binding.ValidationRules>
+                                            <validation:CustomerNameValidation/>
+                                        </Binding.ValidationRules>
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <Button Grid.Row="2" Grid.Column="0" Margin="10" Content="Add" Command="{Binding AddCommand}">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="IsEnabled" Value="False"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Path=(Validation.HasError), ElementName=DatabaseBox}" Value="False"/>
+                                                    <Condition Binding="{Binding Path=(Validation.HasError), ElementName=CustomerBox}" Value="False"/>
+                                                    <Condition Binding="{Binding Path=Text, ElementName=DatabaseBox, Converter={StaticResource TextToEnabledConverter}}" Value="True"/>
+                                                    <Condition Binding="{Binding Path=Text, ElementName=CustomerBox, Converter={StaticResource TextToEnabledConverter}}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="IsEnabled" Value="True"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Grid.Row="2" Grid.Column="1" Margin="10" Content="Delete" Command="{Binding DeleteCommand}"
+                                    IsEnabled="{Binding ElementName=DatabaseList, Path=SelectedIndex, Converter={StaticResource SelectionToEnabledConverter}}"/>
+                                <Button Grid.Row="2" Grid.Column="2" Margin="10" Content="Clear All" Command="{Binding ClearCommand}"/>
                         </Grid>
                     </GroupBox>
                 </Grid>

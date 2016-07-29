@@ -12,8 +12,18 @@
     <ribbon:RibbonTab x:Name="ConfigureTab" Header="Configure">
         <ribbon:RibbonGroup Header="Management">
             <ribbon:RibbonButton Label="Create New File" Command="{Binding CreateNewCommand}"/>
-            <ribbon:RibbonButton Label="Save" Command="{Binding SaveCommand}"/>
-            <ribbon:RibbonButton Label="Load"/>
+            <ribbon:RibbonButton Label="Save" Command="{Binding SaveCommand}">
+                <ribbon:RibbonButton.Style>
+                    <Style>
+                        <Style.Triggers>
+                            <DataTrigger Binding ="{Binding }" Value ="-1">
+                                <Setter Property="ribbon:RibbonButton.IsEnabled" Value="False"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ribbon:RibbonButton.Style>
+            </ribbon:RibbonButton>
+            <ribbon:RibbonButton Label="Load" Command="{Binding LoadCommand}"/>
         </ribbon:RibbonGroup>
     </ribbon:RibbonTab>
 
