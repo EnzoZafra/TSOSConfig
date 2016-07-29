@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Text;
-using System.Windows.Forms;
-using System.Windows.Input;
+using System.Text.RegularExpressions;
 using System.Xml;
-using TSOSConfig.HelperClasses;
+using System.Windows;
+using GalaSoft.MvvmLight.Command;
 using TSOSConfig.Models;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
 namespace TSOSConfig.ViewModels
@@ -17,22 +16,33 @@ namespace TSOSConfig.ViewModels
     {
         public static MainViewModel Instance { get; } = new MainViewModel();
 
-        public ICommand SaveCommand { get; private set; }
-        public ICommand CreateNewCommand { get; private set; }
+        public Window Owner { get { return Get<Window>(); } set { Set(value); } }
+        public RelayCommand SaveCommand { get; set; }
+        public RelayCommand CreateNewCommand { get; set; }
+        public RelayCommand LoadCommand { get; set; }
         public FileModel File { get { return Get<FileModel>(); } set { Set(value); } }
 
         public MainViewModel()
         {
-            CreateNewCommand = new ActionCommand(CreateNew, () => true);
-            SaveCommand = new ActionCommand(Save, () => true);
+            CreateNew();
+            CreateNewCommand = new RelayCommand(CreateNew, () => true);
+            SaveCommand = new RelayCommand(Save, CanSave);
+            LoadCommand = new RelayCommand(Load, () => true);
         }
 
         private void CreateNew()
         {
+            ConfigureViewModel.Instance.NewFile = false;
             ConfigureViewModel.Instance.DatabaseList = new ObservableCollection<DatabaseModel>();
             ConfigureViewModel.Instance.Database = new DatabaseModel();
-            ConfigureViewModel.Instance.NewFile = true;
             ConfigureViewModel.Instance.Configuration = new ConfigurationModel();
+
+            File = new FileModel()
+            {
+                Database = ConfigureViewModel.Instance.Database,
+                Configuration = ConfigureViewModel.Instance.Configuration,
+                RawXML = string.Empty
+            };
         }
 
         private void Save()
@@ -40,28 +50,80 @@ namespace TSOSConfig.ViewModels
             string xmlstring = UpdatePreview();
             XmlDocument xmldocument = GetXmlDocument(xmlstring);
             SaveDocument(xmldocument);
-            ConfigureViewModel.Instance.NewFile = false;
-            Refresh();
         }
 
-        public void Refresh()
+        private bool CanSave()
         {
-            ConfigureViewModel.Instance.NewFile = false;
-            ConfigureViewModel.Instance.DatabaseList = new ObservableCollection<DatabaseModel>();
-            ConfigureViewModel.Instance.Database = new DatabaseModel();
-            ConfigureViewModel.Instance.Configuration = new ConfigurationModel();
-            File = new FileModel();
+            return File.RawXML != string.Empty;
+        }
+
+        private void Load()
+        {
+            var openFileDialog = new OpenFileDialog()
+            {
+                Filter = "XML files (*.xml)|*.xml",
+                FilterIndex = 0,
+                RestoreDirectory = true,
+                FileName = null,
+                Title = "Open XML file to be imported"
+            };
+            if (openFileDialog.ShowDialog() == true)
+            {
+                var streamReader = new System.IO.StreamReader(openFileDialog.FileName);
+                string rawxml = streamReader.ReadToEnd();
+                streamReader.Close();
+                ParseXML(rawxml);
+            }
+        }
+
+        private void ParseXML(string rawxml)
+        {
+            File.RawXML = rawxml;
+            if (rawxml == null) { return; }
+            rawxml = rawxml.Replace("\r\n", " ");
+
+            // Need to get a shorter regular expession.
+            var match = Regex.Match(rawxml, 
+                "(?:[\\s\\S]*?(?=RecurringTime))(?\'configuration\'[\\s\\S]*?(?=\\ \\/>))(?:[\\s\\S]*?(?=<DATABASE\\ Name))(?\'databases\'[\\s\\S]*?(?=\\ \\ \\ <\\/DATABASES>))");
+            if (!match.Success)
+            {
+                return;
+            }
+            string configuration = match.Groups["configuration"].Value;
+            string databases = match.Groups["databases"].Value;             
+            
+            // Parse configuration object
+            string regex1 =
+                @"(?:RecurringTime=)(?'recurringtime'[\s\S]*?(?=\ ))(?:\ MailServer=)(?'mailserver'.*$)";
+            var splitconfiguration = Regex.Match(configuration.Replace("\"",string.Empty), regex1);
+
+            File.Configuration.RecurringTime = int.Parse(splitconfiguration.Groups["recurringtime"].Value);
+            File.Configuration.MailServer = splitconfiguration.Groups["mailserver"].Value;
+            // Parse database objects
+
+            foreach (Match element in Regex.Matches(databases, @"(?'match'[\s\S]*?(?=\/>))(\/>)"))
+            {
+                var databasematch = element.Groups["match"].Value;
+                string regex2 = @"(?:<DATABASE\ Name=)(?'dbname'[\s\S]*?(?=\ ))(?:\ Customer=)(?'custname'.*$)";
+                Match match2;
+
+                if ((match2 = Regex.Match(databasematch.Replace("\"", string.Empty), regex2)).Success)
+                {
+                    var databaseentry = new DatabaseModel()
+                    {
+                        CustomerName = match2.Groups["custname"].Value,
+                        DatabaseName = match2.Groups["dbname"].Value
+                    };
+                    ConfigureViewModel.Instance.DatabaseList.Add(databaseentry);
+                }
+            }
+            ConfigureViewModel.Instance.NewFile = true;
         }
 
         public string UpdatePreview()
         {
-            // For testing
-            File = new FileModel
-            {
-                Database = ConfigureViewModel.Instance.Database,
-                Configuration = ConfigureViewModel.Instance.Configuration
-            };
-
+            File.Configuration = ConfigureViewModel.Instance.Configuration;
+            File.Database = ConfigureViewModel.Instance.Database;
             var preview = new StringBuilder();
             preview.Append("<TSOS>");
             preview.Append("<CONFIGURATION RecurringTime=\"");
@@ -75,6 +137,7 @@ namespace TSOSConfig.ViewModels
             preview.Append("</TSOS>");
 
             File.RawXML = XmlToString(GetXmlDocument(preview.ToString()));
+
             return File.RawXML;
         }
 
@@ -108,6 +171,8 @@ namespace TSOSConfig.ViewModels
             if (saveFileDialog.ShowDialog() == true)
             {
                 document.Save(saveFileDialog.FileName);
+                ConfigureViewModel.Instance.NewFile = false;
+                CreateNew();
             }
             return document;
         }
@@ -118,7 +183,7 @@ namespace TSOSConfig.ViewModels
             foreach (DatabaseModel database in databaselist)
             {
                 stringbuilder.Append("<DATABASE Name = \"").Append(database.DatabaseName).Append("\" ");
-                stringbuilder.Append("Customer=\"").Append(database.CustomerName).Append("\"/> ");
+                stringbuilder.Append("Customer=\"").Append(database.CustomerName).Append("\"/>");
             }
             return stringbuilder.ToString();
         }
