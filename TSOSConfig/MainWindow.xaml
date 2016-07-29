@@ -9,6 +9,7 @@
         xmlns:viewmodel="clr-namespace:TSOSConfig.ViewModels"
         mc:Ignorable="d"
         Title="TSOS Config" Height="700" Width="516"
+        WindowStartupLocation = "CenterScreen"
         DataContext="{Binding Source={x:Static viewmodel:MainViewModel.Instance}}">
     <Grid>
         <Grid.RowDefinitions>

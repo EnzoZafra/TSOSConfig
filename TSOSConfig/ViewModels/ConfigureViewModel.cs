@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
+using GalaSoft.MvvmLight.Command;
 using TSOSConfig.HelperClasses;
 using TSOSConfig.Models;
 
@@ -14,21 +10,45 @@ namespace TSOSConfig.ViewModels
     {
         public static ConfigureViewModel Instance { get; } = new ConfigureViewModel();
 
-        public ConfigurationModel Configuration {get { return Get<ConfigurationModel>(); } set {Set(value); } }
-        public DatabaseModel Database { get { return Get<DatabaseModel>(); } set { Set(value); } }
-        public ObservableCollection<DatabaseModel> DatabaseList {get { return Get<ObservableCollection<DatabaseModel>>(); } set {Set(value); } }
-        public DatabaseModel SelectedDatabase { get { return Get<DatabaseModel>(); } set { Set(value); } }
-        public bool NewFile { get { return Get<bool>(); } set { Set(value); } }
+        public ConfigurationModel Configuration
+        {
+            get { return Get<ConfigurationModel>(); }
+            set { Set(value); }
+        }
 
-        public ICommand AddCommand { get; private set; }
-        public ICommand DeleteCommand { get; private set; }
-        public ICommand ClearCommand { get; private set; }
+        public DatabaseModel Database
+        {
+            get { return Get<DatabaseModel>(); }
+            set { Set(value); }
+        }
+
+        public ObservableCollection<DatabaseModel> DatabaseList
+        {
+            get { return Get<ObservableCollection<DatabaseModel>>(); }
+            set { Set(value); }
+        }
+
+        public DatabaseModel SelectedDatabase
+        {
+            get { return Get<DatabaseModel>(); }
+            set { Set(value); }
+        }
+
+        public bool NewFile
+        {
+            get { return Get<bool>(); }
+            set { Set(value); }
+        }
+
+        public RelayCommand AddCommand { get; private set; }
+        public RelayCommand DeleteCommand { get; private set; }
+        public RelayCommand ClearCommand { get; private set; }
 
         public ConfigureViewModel()
         {
-            AddCommand = new ActionCommand(Add, () => true);
-            DeleteCommand = new ActionCommand(Delete, () => true);
-            ClearCommand = new ActionCommand(Clear, () => true);
+            AddCommand = new RelayCommand(Add, () => true);
+            DeleteCommand = new RelayCommand(Delete, () => true);
+            ClearCommand = new RelayCommand(Clear, () => true);
         }
 
         private void Add()
@@ -57,13 +77,12 @@ namespace TSOSConfig.ViewModels
             MainViewModel.Instance.UpdatePreview();
         }
 
-
-        //public event PropertyChangedEventHandler PropertyChanged;
-
-        //private void RaisePropertyChanged(string propertyName)
-        //{
-        //    PropertyChangedEventHandler handler = this.PropertyChanged;
-        //    handler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        //}
+        // Returns true if one of the fields have a value.
+        public bool HasEntry()
+        {
+            return !(DatabaseList.Count == 0 && string.IsNullOrWhiteSpace(Configuration.MailServer)
+                    && Configuration.RecurringTime == 0 && string.IsNullOrWhiteSpace(Database.CustomerName)
+                    && string.IsNullOrWhiteSpace(Database.DatabaseName));
+        }
     }
 }
