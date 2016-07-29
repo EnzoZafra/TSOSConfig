@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Windows;
+using System.Windows.Controls;
 using GalaSoft.MvvmLight.Command;
 using TSOSConfig.Models;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
@@ -16,15 +17,21 @@ namespace TSOSConfig.ViewModels
     {
         public static MainViewModel Instance { get; } = new MainViewModel();
 
-        public Window Owner { get { return Get<Window>(); } set { Set(value); } }
+        public Window MainWindow => Application.Current.MainWindow;
         public RelayCommand SaveCommand { get; set; }
         public RelayCommand CreateNewCommand { get; set; }
         public RelayCommand LoadCommand { get; set; }
         public FileModel File { get { return Get<FileModel>(); } set { Set(value); } }
+        public bool HasSaved;
+        public bool Initializing;
 
         public MainViewModel()
         {
-            CreateNew();
+            Initializing = true;
+            HasSaved = true;
+            ConfigureViewModel.Instance.NewFile = false;
+            SetObjects();
+
             CreateNewCommand = new RelayCommand(CreateNew, () => true);
             SaveCommand = new RelayCommand(Save, CanSave);
             LoadCommand = new RelayCommand(Load, () => true);
@@ -32,7 +39,24 @@ namespace TSOSConfig.ViewModels
 
         private void CreateNew()
         {
-            ConfigureViewModel.Instance.NewFile = false;
+            HasSaved = false;
+            if (Initializing)
+            {
+                ConfigureViewModel.Instance.NewFile = true;
+                Initializing = false;
+                return;
+            }
+            if (!HasSaved && ConfigureViewModel.Instance.HasEntry())
+            {
+                MessageBoxResult messageresult = MessageBox.Show(MainWindow,"You will lose unsaved progress. Continue?", 
+                                                            "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (messageresult != MessageBoxResult.Yes) return;
+                SetObjects();
+            }
+        }
+
+        private void SetObjects()
+        {
             ConfigureViewModel.Instance.DatabaseList = new ObservableCollection<DatabaseModel>();
             ConfigureViewModel.Instance.Database = new DatabaseModel();
             ConfigureViewModel.Instance.Configuration = new ConfigurationModel();
@@ -50,6 +74,7 @@ namespace TSOSConfig.ViewModels
             string xmlstring = UpdatePreview();
             XmlDocument xmldocument = GetXmlDocument(xmlstring);
             SaveDocument(xmldocument);
+            HasSaved = true;
         }
 
         private bool CanSave()
@@ -59,20 +84,27 @@ namespace TSOSConfig.ViewModels
 
         private void Load()
         {
-            var openFileDialog = new OpenFileDialog()
+            if (!HasSaved && ConfigureViewModel.Instance.HasEntry())
             {
-                Filter = "XML files (*.xml)|*.xml",
-                FilterIndex = 0,
-                RestoreDirectory = true,
-                FileName = null,
-                Title = "Open XML file to be imported"
-            };
+                MessageBoxResult messageresult = MessageBox.Show(MainWindow, "You will lose unsaved progress. Continue?",
+                                                            "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (messageresult != MessageBoxResult.Yes) return;
+            }
+            var openFileDialog = new OpenFileDialog()
+                {
+                    Filter = "XML files (*.xml)|*.xml",
+                    FilterIndex = 0,
+                    RestoreDirectory = true,
+                    FileName = null,
+                    Title = "Open XML file to be imported"
+                };
             if (openFileDialog.ShowDialog() == true)
             {
                 var streamReader = new System.IO.StreamReader(openFileDialog.FileName);
                 string rawxml = streamReader.ReadToEnd();
                 streamReader.Close();
                 ParseXML(rawxml);
+                HasSaved = false;
             }
         }
 
@@ -171,8 +203,8 @@ namespace TSOSConfig.ViewModels
             if (saveFileDialog.ShowDialog() == true)
             {
                 document.Save(saveFileDialog.FileName);
-                ConfigureViewModel.Instance.NewFile = false;
                 CreateNew();
+                ConfigureViewModel.Instance.NewFile = false;
             }
             return document;
         }
@@ -195,6 +227,16 @@ namespace TSOSConfig.ViewModels
             byte[] bytes = iso88591.GetBytes(input);
             string result = iso88591.GetString(bytes);
             return string.Equals(input, result);
+        }
+
+        public void OnWindowClosing(object sender, CancelEventArgs e)
+        {
+            if (!HasSaved && ConfigureViewModel.Instance.HasEntry())
+            {
+                MessageBoxResult messageresult = MessageBox.Show(MainWindow, "You will lose unsaved progress. Continue?",
+                                                            "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (messageresult != MessageBoxResult.Yes) e.Cancel = true;
+            }
         }
     }
 }

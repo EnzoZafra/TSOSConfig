@@ -1,10 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Linq;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Windows.Controls;
-using TSOSConfig.ViewModels;
 
 namespace TSOSConfig.HelperClasses.Validations
 {
