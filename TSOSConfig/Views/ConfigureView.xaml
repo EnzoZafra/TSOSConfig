@@ -8,7 +8,7 @@
              xmlns:converters="clr-namespace:TSOSConfig.HelperClasses.Converters"
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              DataContext="{Binding Source={x:Static viewmodel:ConfigureViewModel.Instance}}"
-             mc:Ignorable="d" d:DesignWidth="517">
+             mc:Ignorable="d" d:DesignWidth="710">
     
     <UserControl.Resources>
         <converters:SelectionToEnabledConverter x:Key="SelectionToEnabledConverter"/>
@@ -64,16 +64,17 @@
             <GroupBox Header="TSOS Configuration">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="258"/>
-                        <ColumnDefinition Width="258"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="350*"/>
                     </Grid.ColumnDefinitions>
                     <Grid Grid.Column="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Recurring Time:" Margin="5"/>
-                        <xctk:IntegerUpDown Grid.Column="1" Width="Auto" MinWidth="120" Margin="5,5,10,5" Minimum="0">
+                        <Label Grid.Column="0" Content="Recurring Time:" Margin="5,5,0,5"/>
+                        <xctk:IntegerUpDown Grid.Column="1" Width="Auto" MinWidth="50" Margin="5,5,10,5" Minimum="0">
                             <xctk:IntegerUpDown.Value>
                                 <Binding Path="Configuration.RecurringTime" UpdateSourceTrigger="PropertyChanged">
                                     <Binding.ValidationRules>
@@ -88,12 +89,28 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Mail Server:" Margin="5"/>
-                        <TextBox Grid.Column="1" Width="Auto" MinWidth="120" Margin="5,5,10,5">
+                        <Label Grid.Column="0" Content="Mail Server:" Margin="5,5,0,5"/>
+                        <TextBox Grid.Column="1" MinWidth="90" Width="Auto" Margin="5,5,15,5">
                             <TextBox.Text>
                                 <Binding Path="Configuration.MailServer" UpdateSourceTrigger="PropertyChanged">
                                     <Binding.ValidationRules>
                                         <validation:MailServerValidation/>
+                                    </Binding.ValidationRules>
+                                </Binding>
+                            </TextBox.Text>
+                        </TextBox>
+                    </Grid>
+                    <Grid Grid.Column="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="MySQL Connection String:" Margin="5,5,0,5"/>
+                        <TextBox Grid.Column="1" MinWidth="150" Width="Auto" Margin="5,5,10,5">
+                            <TextBox.Text>
+                                <Binding Path="Configuration.MySQLConnectionString" UpdateSourceTrigger="PropertyChanged">
+                                    <Binding.ValidationRules>
+                                        <validation:ConnectionStringValidation/>
                                     </Binding.ValidationRules>
                                 </Binding>
                             </TextBox.Text>
@@ -106,7 +123,7 @@
             <GroupBox Header="Database">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="170"/>
+                        <ColumnDefinition Width="330"/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
                     <ListView x:Name="DatabaseList" Grid.Column="0" MinHeight="150" MinWidth="100" Margin="7" 

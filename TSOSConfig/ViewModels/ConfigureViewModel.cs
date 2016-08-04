@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
-using GalaSoft.MvvmLight.Command;
 using TSOSConfig.HelperClasses;
 using TSOSConfig.Models;
 

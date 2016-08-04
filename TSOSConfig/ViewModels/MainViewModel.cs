@@ -1,12 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Windows;
 using System.Windows.Controls;
-using GalaSoft.MvvmLight.Command;
+using System.Xml.Linq;
+using TSOSConfig.HelperClasses;
 using TSOSConfig.Models;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
@@ -74,7 +77,6 @@ namespace TSOSConfig.ViewModels
             string xmlstring = UpdatePreview();
             XmlDocument xmldocument = GetXmlDocument(xmlstring);
             SaveDocument(xmldocument);
-            HasSaved = true;
         }
 
         private bool CanSave()
@@ -112,42 +114,30 @@ namespace TSOSConfig.ViewModels
         {
             File.RawXML = rawxml;
             if (rawxml == null) { return; }
-            rawxml = rawxml.Replace("\r\n", " ");
+            var reader = new StringReader(rawxml);
+            var xdoc = XDocument.Load(reader);
 
-            // Need to get a shorter regular expession.
-            var match = Regex.Match(rawxml, 
-                "(?:[\\s\\S]*?(?=RecurringTime))(?\'configuration\'[\\s\\S]*?(?=\\ \\/>))(?:[\\s\\S]*?(?=<DATABASE\\ Name))(?\'databases\'[\\s\\S]*?(?=\\ \\ \\ <\\/DATABASES>))");
-            if (!match.Success)
-            {
-                return;
-            }
-            string configuration = match.Groups["configuration"].Value;
-            string databases = match.Groups["databases"].Value;             
-            
-            // Parse configuration object
-            string regex1 =
-                @"(?:RecurringTime=)(?'recurringtime'[\s\S]*?(?=\ ))(?:\ MailServer=)(?'mailserver'.*$)";
-            var splitconfiguration = Regex.Match(configuration.Replace("\"",string.Empty), regex1);
-
-            File.Configuration.RecurringTime = int.Parse(splitconfiguration.Groups["recurringtime"].Value);
-            File.Configuration.MailServer = splitconfiguration.Groups["mailserver"].Value;
-            // Parse database objects
-
-            foreach (Match element in Regex.Matches(databases, @"(?'match'[\s\S]*?(?=\/>))(\/>)"))
-            {
-                var databasematch = element.Groups["match"].Value;
-                string regex2 = @"(?:<DATABASE\ Name=)(?'dbname'[\s\S]*?(?=\ ))(?:\ Customer=)(?'custname'.*$)";
-                Match match2;
-
-                if ((match2 = Regex.Match(databasematch.Replace("\"", string.Empty), regex2)).Success)
-                {
-                    var databaseentry = new DatabaseModel()
+            var query = from results in xdoc.Descendants("CONFIGURATION")
+                    select new
                     {
-                        CustomerName = match2.Groups["custname"].Value,
-                        DatabaseName = match2.Groups["dbname"].Value
+                        RecurringTime = results.Attribute("RecurringTime").Value,
+                        MailServer = results.Attribute("MailServer").Value,
+                        SQLConnectionString = results.Attribute("MySQLConnectionString").Value
                     };
-                    ConfigureViewModel.Instance.DatabaseList.Add(databaseentry);
-                }
+            File.Configuration.RecurringTime = int.Parse(query.FirstOrDefault().RecurringTime);
+            File.Configuration.MailServer = query.FirstOrDefault().MailServer;
+            File.Configuration.MySQLConnectionString = query.FirstOrDefault().SQLConnectionString;
+            foreach (XElement element in xdoc.Root
+                                .Element("DATABASES")
+                                .Elements("DATABASE"))
+            {
+                var databaseentry = new DatabaseModel()
+                {
+                    CustomerName = element.Attribute("Customer").Value,
+                    DatabaseName = element.Attribute("Name").Value
+                };
+                ConfigureViewModel.Instance.DatabaseList.Add(databaseentry);
+
             }
             ConfigureViewModel.Instance.NewFile = true;
         }
@@ -158,10 +148,12 @@ namespace TSOSConfig.ViewModels
             File.Database = ConfigureViewModel.Instance.Database;
             var preview = new StringBuilder();
             preview.Append("<TSOS>");
-            preview.Append("<CONFIGURATION RecurringTime=\"");
-            preview.Append(File.Configuration.RecurringTime)
-                .Append("\" MailServer=\"")
-                .Append(File.Configuration.MailServer)
+            preview.Append("<CONFIGURATION RecurringTime=\"")
+                .Append(File.Configuration.RecurringTime);
+            preview.Append("\" MailServer=\"")
+                .Append(File.Configuration.MailServer);
+            preview.Append("\" MySQLConnectionString=\"")
+                .Append(File.Configuration.MySQLConnectionString)
                 .Append("\"/>");
             preview.Append("<DATABASES>");
             preview.Append(GetDatabaseStrings(ConfigureViewModel.Instance.DatabaseList));
@@ -203,7 +195,8 @@ namespace TSOSConfig.ViewModels
             if (saveFileDialog.ShowDialog() == true)
             {
                 document.Save(saveFileDialog.FileName);
-                CreateNew();
+                HasSaved = true;
+                SetObjects();
                 ConfigureViewModel.Instance.NewFile = false;
             }
             return document;
