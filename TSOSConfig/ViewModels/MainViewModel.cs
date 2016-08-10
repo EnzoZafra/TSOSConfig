@@ -84,12 +84,14 @@ namespace TSOSConfig.ViewModels
 
         private void Load()
         {
+            Initializing = false;
             if (!HasSaved && ConfigureViewModel.Instance.HasEntry())
             {
                 MessageBoxResult messageresult = MessageBox.Show(MainWindow, "You will lose unsaved progress. Continue?",
                                                             "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (messageresult != MessageBoxResult.Yes) return;
             }
+            ConfigureViewModel.Instance.DatabaseList = new ObservableCollection<DatabaseModel>();
             var openFileDialog = new OpenFileDialog()
                 {
                     Filter = "XML files (*.xml)|*.xml",
@@ -166,10 +168,9 @@ namespace TSOSConfig.ViewModels
         protected string XmlToString(XmlDocument xmlDocument)
         {
             var builder = new StringBuilder();
-            System.IO.TextWriter systemwriter = new System.IO.StringWriter(builder);
-            var xmlwriter = new XmlTextWriter(systemwriter) { Formatting = Formatting.Indented };
-            xmlDocument.Save(xmlwriter);
-            xmlwriter.Close();
+            var xmlWriterSettings = new XmlWriterSettings
+            { Indent = true, OmitXmlDeclaration = true };
+            xmlDocument.Save(XmlWriter.Create(builder, xmlWriterSettings));
             return builder.ToString();
         }
 

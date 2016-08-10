@@ -8,14 +8,14 @@ namespace TSOSConfig.HelperClasses.Validations
     {
         public override ValidationResult Validate(object value, CultureInfo cultureInfo)
         {
-            Regex regex = new Regex(@"^[a-zA-Z0-9.\-_;,$]*$");
+            Regex regex = new Regex(@"^[a-zA-Z0-9.=\-;]*$");
             if (string.IsNullOrWhiteSpace((string)value))
             {
                 return new ValidationResult(false, "This field cannot be blank.");
             }
             else if (!(regex.IsMatch((string)value)))
             {
-                return new ValidationResult(false, "Customer Names can only contain alphanumeric characters and (._-$;,)");
+                return new ValidationResult(false, "MySQL Connection Strings can only contain alphanumeric characters and (=.-;)");
             }
 
             return new ValidationResult(true, null);
