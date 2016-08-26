@@ -23,8 +23,7 @@ namespace TSOSConfig.HelperClasses
         }
         public RelayCommand(Action methodToExecute)
             : this(methodToExecute, null)
-        {
-        }
+        {}
         public bool CanExecute(object parameter)
         {
             if (this.canExecuteEvaluator == null)

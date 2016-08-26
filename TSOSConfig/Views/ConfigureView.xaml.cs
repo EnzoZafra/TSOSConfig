@@ -1,4 +1,6 @@
-﻿namespace TSOSConfig.Views
+﻿
+
+namespace TSOSConfig.Views
 {
     /// <summary>
     /// Interaction logic for ConfigureView.xaml
