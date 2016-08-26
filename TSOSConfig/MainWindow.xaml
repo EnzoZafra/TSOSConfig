@@ -8,7 +8,7 @@
         xmlns:view="clr-namespace:TSOSConfig.Views"
         xmlns:viewmodel="clr-namespace:TSOSConfig.ViewModels"
         mc:Ignorable="d"
-        Title="TSOS Config" Height="700" Width="516"
+        Title="TSOS Config" Height="720" Width="640"
         WindowStartupLocation = "CenterScreen"
         DataContext="{Binding Source={x:Static viewmodel:MainViewModel.Instance}}">
     <Grid>
@@ -24,14 +24,14 @@
         </ContentControl>
 
         <Expander Grid.Row="2"
-                  IsExpanded="False"
+                  IsExpanded="True"
                   Header="Preview TSOS.XML">
-            <TextBox x:Name="TextBox" Height="220"
-                               IsReadOnly="True"
+            <ScrollViewer x:Name="ScrollViewer" Height="220"
                                FontFamily="Courier New"
                                FontSize="14"
+                               HorizontalScrollBarVisibility="Auto"
                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-                               Text="{Binding File.RawXML}"/>
+                               Content="{Binding File.RawXML}"/>
         </Expander>
     </Grid>
 </ribbon:RibbonWindow>

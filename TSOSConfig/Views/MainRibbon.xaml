@@ -7,6 +7,13 @@
         xmlns:viewmodel="clr-namespace:TSOSConfig.ViewModels"
         DataContext="{Binding Source={x:Static viewmodel:MainViewModel.Instance}}"
         mc:Ignorable="d">
+    <ribbon:Ribbon.ApplicationMenu>
+        <ribbon:RibbonApplicationMenu>
+            <ribbon:RibbonApplicationMenuItem Header="Create New" Command="{Binding CreateNewCommand}"/>
+            <ribbon:RibbonApplicationMenuItem Header="Save" Command="{Binding SaveCommand}"/>
+            <ribbon:RibbonApplicationMenuItem Header="Load" Command="{Binding LoadCommand}"/>
+        </ribbon:RibbonApplicationMenu>
+    </ribbon:Ribbon.ApplicationMenu>
 
     <ribbon:RibbonTab x:Name="ConfigureTab" Header="Configure">
         <ribbon:RibbonGroup Header="Management">
